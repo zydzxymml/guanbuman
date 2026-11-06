@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<title>灌不满气死你</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;overflow:hidden;background:#0b1020;color:#e8eeff;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    user-select:none;-webkit-user-select:none;}
+  #c{display:block;position:fixed;inset:0;touch-action:none;}
+  .hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;
+    padding:20px 22px;pointer-events:none;font-variant-numeric:tabular-nums;}
+  .hud .item{font-size:12px;opacity:.55;letter-spacing:1px;}
+  .hud .val{font-size:26px;font-weight:800;letter-spacing:0;opacity:1;margin-top:2px;}
+  .hud .center{text-align:center;}
+  .hud .right{text-align:right;}
+  #hearts{font-size:17px;letter-spacing:2px;margin-top:6px;opacity:.9;}
+  .overlay{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;
+    justify-content:center;align-items:center;padding:28px;text-align:center;
+    background:radial-gradient(circle at 50% 38%,rgba(24,36,70,.94),rgba(5,8,18,.99));}
+  .overlay.hide{display:none;}
+  h1{font-size:44px;font-weight:900;letter-spacing:6px;margin-bottom:10px;
+    background:linear-gradient(180deg,#c9fbff,#4cc8ff);
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .sub{font-size:14px;line-height:2;opacity:.72;max-width:330px;}
+  .sub b{color:#7fe4ff;font-weight:700;}
+  .btn{margin-top:28px;padding:16px 56px;border:0;border-radius:999px;cursor:pointer;
+    font-size:18px;font-weight:800;letter-spacing:3px;color:#04121f;
+    background:linear-gradient(180deg,#a6f2ff,#46c4ff);
+    box-shadow:0 10px 34px rgba(72,198,255,.35);}
+  .btn:active{transform:scale(.97);}
+  .rank{margin-top:26px;width:100%;max-width:320px;}
+  .rank h2{font-size:11px;letter-spacing:4px;opacity:.45;margin-bottom:10px;font-weight:600;}
+  .rank ol{list-style:none;}
+  .rank li{display:flex;justify-content:space-between;font-size:14px;padding:9px 14px;
+    border-radius:11px;background:rgba(255,255,255,.045);margin-bottom:6px;
+    font-variant-numeric:tabular-nums;}
+  .rank li span:first-child{opacity:.45;width:26px;text-align:left;}
+  .rank li .s{font-weight:800;}
+  .rank li .d{opacity:.35;font-size:12px;}
+  .scorebig{font-size:72px;font-weight:900;letter-spacing:1px;margin:4px 0;
+    font-variant-numeric:tabular-nums;background:linear-gradient(180deg,#fff,#8fe8ff);
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .label{font-size:11px;letter-spacing:4px;opacity:.45;}
+  .meta{font-size:13px;opacity:.6;margin-top:6px;}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="hud">
+  <div class="item">
+    分数
+    <div class="val" id="score">0</div>
+  </div>
+  <div class="item center">
+    <div id="round">第 1 关</div>
+    <div id="roundTag" style="font-size:12px;opacity:.65;margin-top:3px;">　</div>
+    <div id="hearts">❤❤❤</div>
+  </div>
+  <div class="item right">
+    最高
+    <div class="val" id="best">0</div>
+  </div>
+</div>
+
+<div class="overlay" id="menu">
+  <h1>灌不满气死你</h1>
+  <div class="sub">
+    水一直在涨。<b>点一下屏幕</b>，让水停在杯口。<br>
+    越贴近杯口分越高，越过杯口就溢出。<br>
+    连击越高，分数翻得越快。<br>
+    <b>窄口 / 晃动 / 涌动</b> 三种杯型随机出现。
+  </div>
+  <button class="btn" id="startBtn">开 始</button>
+  <button class="btn" id="inviteBtn" style="margin-top:12px;font-size:14px;padding:12px 36px;letter-spacing:2px;background:linear-gradient(180deg,#c9fbff,#4cc8ff);">邀 请 好 友</button>
+  <button class="btn" id="friendRankBtn" style="margin-top:12px;font-size:14px;padding:12px 36px;letter-spacing:2px;background:linear-gradient(180deg,#e9d8ff,#9b6bff);">好 友 排 行</button>
+  <button class="btn" id="bottleBtn" style="margin-top:12px;font-size:14px;padding:12px 36px;letter-spacing:2px;background:linear-gradient(180deg,#a8ffc0,#2ad084);">🍶 我 的 水 瓶</button>
+  <div class="rank">
+    <h2>本机最高纪录</h2>
+    <ol id="rankMenu"></ol>
+  </div>
+</div>
+
+<div class="overlay hide" id="over">
+  <div class="label">本局得分</div>
+  <div class="scorebig" id="finalScore">0</div>
+  <div class="meta" id="finalMeta"></div>
+  <div class="bottle-hint" id="bottleHint" style="display:none;margin:10px 0;padding:10px 14px;border-radius:10px;font-size:13px;background:rgba(255,220,120,.15);color:#ffd45e;border:1px solid rgba(255,212,94,.4);text-align:center;"></div>
+  <button class="btn" id="againBtn">再 来 一 局</button>
+  <button class="btn" id="adPlayBtn" style="display:none;margin-top:10px;font-size:14px;padding:10px 30px;letter-spacing:2px;background:linear-gradient(180deg,#ffcf7f,#ff8f2b);box-shadow:0 8px 24px rgba(255,143,43,.35);">📺 看 广 告 再 玩 一 局</button>
+  <button class="btn" id="reviveBtn" style="display:none;margin-top:10px;font-size:14px;padding:10px 30px;letter-spacing:2px;background:linear-gradient(180deg,#a8ffc0,#2ad084);">📺 看 广 告 复 活</button>
+  <button class="btn" id="bottleCollectBtn" style="display:none;margin-top:10px;font-size:14px;padding:10px 30px;letter-spacing:2px;background:linear-gradient(180deg,#a8ffc0,#2ad084);">🍶 收 集 水 瓶</button>
+  <button class="btn" id="bottleDoubleBtn" style="display:none;margin-top:10px;font-size:14px;padding:10px 30px;letter-spacing:2px;background:linear-gradient(180deg,#ffcf7f,#ff8f2b);">📺 看 广 告 → 1 瓶 变 2 瓶</button>
+  <button class="btn" id="shareBtn" style="margin-top:12px;font-size:14px;padding:12px 36px;letter-spacing:2px;background:linear-gradient(180deg,#c9fbff,#4cc8ff);">晒 成 绩</button>
+  <div class="rank">
+    <h2>本机排行榜</h2>
+    <ol id="rankOver"></ol>
+  </div>
+</div>
+
+<!-- 好友排行表面板 -->
+<div class="overlay hide" id="friendRankPanel">
+  <div class="label" id="friendRankTitle">好友排行榜</div>
+  <div id="friendRankList" class="rank" style="max-height:50vh;overflow-y:auto;">
+    <ol id="friendRankOl"></ol>
+  </div>
+  <button class="btn" id="friendRankCloseBtn" style="margin-top:16px;">关 闭</button>
+</div>
+
+<!-- 水瓶活动面板 -->
+<div class="overlay hide" id="bottlePanel">
+  <div class="label">🍶 我 的 水 瓶</div>
+  <div style="font-size:13px;color:#a7b5d5;margin-bottom:14px;text-align:center;">
+    达成 <b style="color:#ffd45e;">1500 分</b> 即可收集 1 瓶<br>
+    看激励视频可加倍成 <b style="color:#ffd45e;">2 瓶</b>，去兑换道具 🎁
+  </div>
+  <div style="display:flex;justify-content:center;align-items:center;gap:8px;margin:10px 0 14px;">
+    <div style="font-size:42px;">🍶</div>
+    <div>
+      <div style="font-size:42px;font-weight:800;color:#2ad084;line-height:1;">
+        <span id="bottleCount">0</span><span style="font-size:22px;color:#6f8bb0;"> / 30</span>
+      </div>
+      <div style="font-size:12px;color:#a7b5d5;letter-spacing:2px;">水 瓶 进 度</div>
+    </div>
+  </div>
+  <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:10px 14px;font-size:12px;color:#cdd7ee;margin-bottom:12px;">
+    <div>🏆 今日免费：<span id="bpFree" style="color:#ffd45e;">未用 / 1</span></div>
+    <div>📺 今日广告：<span id="bpAds" style="color:#ffd45e;">0</span> / 8</div>
+    <div>🍶 今日收集：<span id="bpCollect" style="color:#ffd45e;">未收集</span></div>
+    <div>📣 分享奖励：<span id="bpShare" style="color:#ffd45e;">未领取</span></div>
+  </div>
+  <button class="btn" id="bpShareBtn" style="font-size:13px;padding:10px 30px;letter-spacing:2px;background:linear-gradient(180deg,#c9fbff,#4cc8ff);">📣 分 享 得 1 瓶（每 日 1 次）</button>
+  <button class="btn" id="bpItemsBtn" style="margin-top:10px;font-size:13px;padding:10px 30px;letter-spacing:2px;background:linear-gradient(180deg,#a8ffc0,#2ad084);">🎁 兑 换 道 具</button>
+
+  <!-- 我的皮肤 -->
+  <div style="margin-top:16px;">
+    <div style="font-size:13px;color:#cdd7ee;margin-bottom:8px;letter-spacing:2px;text-align:center;">🎨 我 的 水 瓶 皮 肤</div>
+    <div id="skinList" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;"></div>
+  </div>
+
+  <button class="btn" id="bottleCloseBtn" style="margin-top:14px;font-size:12px;padding:8px 24px;letter-spacing:1px;background:linear-gradient(180deg,#6f8bb0,#4a6080);">关 闭</button>
+</div>
+
+<!-- 道具兑换面板 -->
+<div class="overlay hide" id="itemsPanel">
+  <div class="label">🎁 兑 换 道 具</div>
+  <div style="font-size:12px;color:#a7b5d5;text-align:center;margin-bottom:14px;">
+    当前 <b style="color:#ffd45e;" id="ipCurrBottle">0</b> 瓶 → 下方点击兑换
+  </div>
+  <div id="itemsList" style="max-height:55vh;overflow-y:auto;"></div>
+  <button class="btn" id="itemsCloseBtn" style="margin-top:14px;font-size:12px;padding:8px 24px;letter-spacing:1px;background:linear-gradient(180deg,#6f8bb0,#4a6080);">关 闭</button>
+</div>
+
+<!-- loading 遮罩（广告播放 / 异步操作时用） -->
+<div id="loadingMask" class="overlay hide" style="background:rgba(5,10,20,.85);pointer-events:none;display:none;">
+  <div style="color:#cdd7ee;font-size:14px;text-align:center;padding:20px 24px;border-radius:10px;background:rgba(255,255,255,.06);">
+    <div style="font-size:32px;margin-bottom:8px;">⏳</div>
+    <span id="loadingText">加载中…</span>
+  </div>
+</div>
+
+<!-- toast 提示 -->
+<div id="toast" style="position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);background:rgba(5,10,20,.9);color:#ffd45e;padding:12px 20px;border-radius:10px;font-size:14px;letter-spacing:1px;z-index:200;opacity:0;transition:opacity .2s;pointer-events:none;"></div>
+
+<script>
+(() => {
+  const cvs = document.getElementById('c');
+  const ctx = cvs.getContext('2d');
+  const $ = id => document.getElementById(id);
+
+  let W = 0, H = 0, DPR = 1;
+
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    cvs.width = Math.floor(W * DPR);
+    cvs.height = Math.floor(H * DPR);
+    cvs.style.width = W + 'px';
+    cvs.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    if (G) layoutGlass();
+  }
+  window.addEventListener('resize', resize);
+
+  // ---------- 音效 ----------
+  let AC = null;
+  function beep(freq, dur, type, vol) {
+    try {
+      if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+      if (AC.state === 'suspended') AC.resume();
+      const o = AC.createOscillator();
+      const g = AC.createGain();
+      o.type = type || 'sine';
+      o.frequency.value = freq;
+      g.gain.value = vol == null ? 0.06 : vol;
+      o.connect(g); g.connect(AC.destination);
+      g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + dur);
+      o.start(); o.stop(AC.currentTime + dur);
+    } catch (e) {}
+  }
+
+  // ---------- 排行榜双模式 ----------
+  // 上线抖音小游戏时把 RANK_MODE 改成 'cloud' 即可，业务代码无需改动。
+  // 'local' = 浏览器/原型阶段，数据存 localStorage
+  // 'cloud' = 抖音小游戏，走 tt.setUserCloudStorage + 开放数据域好友排行
+  // ---------- 全局存档 ----------
+  // 统一用一个 userData 存全部长期状态，避免版本升级字段缺失。
+  const DATA_KEY = 'gm_user_v2';
+
+  // ===== 水瓶活动规则（不要改，改了会影响收益模型）=====
+  const RULES = {
+    BOTTLE_SCORE: 1500,         // 达成 1 瓶水的分数门槛
+    BOTTLE_AD_VIEWS: 8,         // 达成 1 瓶水所需激励视频次数（≈0.96 元收入）
+    FREE_PLAYS_PER_DAY: 1,      // 每日免费游戏次数
+    AD_PER_EXTRA_PLAY: 1,       // 额外玩 1 次 = 看几次激励视频
+    INTERSTITIAL_EVERY: 3,      // 每几次结算弹一次插屏
+    WATCH_2X_BOTTLE: 1,         // 看几次激励视频可把 1 瓶变 2 瓶
+    SHARE_DAILY_BOTTLE: 1,      // 每天分享得 1 瓶
+  };
+
+  // ===== 道具兑换表（合规虚拟道具，成本 = 0）=====
+  // id: 唯一 key；cost: 水瓶价格；stock: -1=无限；effect: 兑换后对存档的修改
+  const ITEMS = [
+    { id: 'freeplay_3',    icon: '🎟️', name: '3 次免费次数',        desc: '兑换后立即 +3 次免费开局',         cost: 10, stock: -1,
+      effect: (U) => { U.extraFreePlays = (U.extraFreePlays || 0) + 3; } },
+    { id: 'revive_forever',icon: '❤️',  name: '永久复活特权',        desc: '每次游戏结束都有 1 次复活机会',   cost: 30, stock: -1,
+      effect: (U) => { U.hasForeverRevive = true; } },
+    { id: 'skin_silver',   icon: '🥈',  name: '白银杯皮肤',          desc: '杯身变成银色，永久生效',          cost: 20, stock: 1,
+      effect: (U) => { U.unlockedSkins = (U.unlockedSkins || []).concat('silver'); U.equippedSkin = 'silver'; } },
+    { id: 'skin_gold',     icon: '🥇',  name: '黄金杯皮肤',          desc: '杯身变成金色 + 火焰特效',         cost: 50, stock: 1,
+      effect: (U) => { U.unlockedSkins = (U.unlockedSkins || []).concat('gold'); U.equippedSkin = 'gold'; } },
+    { id: 'skin_legend',   icon: '✨',  name: '传奇杯皮肤',          desc: '彩虹流光 + 粒子特效',             cost: 80, stock: 1,
+      effect: (U) => { U.unlockedSkins = (U.unlockedSkins || []).concat('legend'); U.equippedSkin = 'legend'; } },
+    { id: 'revive_7d',     icon: '⏳',  name: '无限复活（7 天）',    desc: '7 天内每场都能无限复活',          cost: 40, stock: -1,
+      effect: (U) => { U.reviveUntil = Date.now() + 7 * 24 * 3600 * 1000; } }
+  ];
+
+  // ===== 皮肤视觉配置（equippedSkin -> 杯身颜色）=====
+  const SKINS = {
+    default: { icon: '🍶', name: '默认杯',   shadow: 'rgba(90,200,255,.45)', stroke: 'rgba(205,238,255,.55)', rim: 'rgba(205,238,255,.55)' },
+    silver:  { icon: '🥈', name: '白银杯',   shadow: 'rgba(180,200,220,.55)', stroke: 'rgba(230,240,250,.85)', rim: 'rgba(230,240,250,.85)' },
+    gold:    { icon: '🥇', name: '黄金杯',   shadow: 'rgba(255,200,60,.60)',  stroke: 'rgba(255,225,130,.85)', rim: 'rgba(255,225,130,.85)' },
+    legend:  { icon: '✨', name: '传奇杯',   shadow: 'rgba(180,120,255,.65)', stroke: 'rgba(230,180,255,.90)', rim: 'rgba(255,200,255,.90)' }
+  };
+
+  // 默认存档（首次进入 / 版本升级时自动补齐缺失字段）
+  const DEFAULT_DATA = {
+    // 原排行榜字段
+    records: [], bestNormal: 0, bestDaily: 0,
+    // 水瓶活动
+    bottles: 0,                 // 已收集水瓶
+    bottlesClaimed: false,      // 今日是否已收集水瓶
+    shareBottleClaimed: false,  // 今日是否已分享领奖
+    // 道具系统
+    extraFreePlays: 0,          // 额外免费次数（可累计）
+    hasForeverRevive: false,    // 永久复活特权
+    reviveUntil: 0,             // 限时复活到期时间戳（0=无）
+    unlockedSkins: [],          // 已解锁皮肤
+    equippedSkin: 'default',    // 当前装备皮肤
+    exchangedItems: {},        // 已兑换记录（itemId -> 次数），用于 stock 判断
+    // 日更重置
+    lastDay: '',                // 上次日更日期 YYYYMMDD
+    freePlayUsed: false,        // 今日免费机会是否已用
+    // 广告统计
+    todayAdsWatched: 0,         // 今日激励视频次数
+    totalAdsWatched: 0,         // 累计激励视频
+    totalInterstitial: 0,      // 累计插屏
+    settleCount: 0,              // 结算次数（用于插屏触发）
+    milestoneClaimed: []         // 已领取里程碑水瓶的关卡（如 [20, 50]）
+  };
+
+  // 里程碑规则：第 20 关起，每 5 关 +1 瓶（20, 25, 30, 35...）
+  const MILESTONE_START = 20;
+  const MILESTONE_STEP = 5;
+
+  function getTodayStr() {
+    const d = new Date();
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  }
+
+  // 跨天刷新：日期变了就把"今日"字段清零
+  function maybeRefreshDay(data) {
+    const today = String(getTodayStr());
+    if (data.lastDay !== today) {
+      data.lastDay = today;
+      data.freePlayUsed = false;
+      data.bottlesClaimed = false;
+      data.shareBottleClaimed = false;
+      data.todayAdsWatched = 0;
+    }
+  }
+
+  // 加载存档（兜底补字段）
+  function loadUserData() {
+    let raw = localStorage.getItem(DATA_KEY);
+    let data;
+    try { data = raw ? JSON.parse(raw) : {}; } catch (e) { data = {}; }
+    // 兜底：用默认值补齐缺失字段
+    data = Object.assign({}, DEFAULT_DATA, data);
+    // 把旧存档（独立的 key）迁移进来（仅第一次）
+    if (data.records.length === 0) {
+      try {
+        const old = JSON.parse(localStorage.getItem('gm_records_v1') || '[]');
+        if (old.length) data.records = old;
+      } catch (e) {}
+      const oldBest = Number(localStorage.getItem('gm_best_v1') || 0);
+      if (oldBest) data.bestNormal = oldBest;
+      const oldDaily = Number(localStorage.getItem('gm_daily_best_v1') || 0);
+      if (oldDaily) data.bestDaily = oldDaily;
+    }
+    maybeRefreshDay(data);
+    return data;
+  }
+
+  function saveUserData(data) {
+    localStorage.setItem(DATA_KEY, JSON.stringify(data));
+  }
+
+  let U = loadUserData(); // 全局存档引用
+
+  // 可复现随机数
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function dailySeed() {
+    const d = new Date();
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  }
+  function pickRoundType(round, rng) {
+    if (round <= 2) return 'normal';
+    if (round % 5 === 0) return 'surge';
+    const r = rng();
+    if (r < 0.32) return 'narrow';
+    if (r < 0.58) return 'wobble';
+    return 'normal';
+  }
+
+  const G = {
+    state: 'menu',        // menu | play | wait | over
+    mode: 'normal',       // normal | daily
+    score: 0,
+    best: 0,
+    dailyBest: 0,
+    combo: 0,
+    maxCombo: 0,
+    lives: 3,
+    round: 1,
+    level: 0,
+    speed: 0.3,
+    roundType: 'normal',
+    surgeTimer: 0,
+    surgeActive: false,
+    glass: { cx: 0, cy: 0, w: 0, h: 0 },
+    shake: 0,
+    flash: 0,
+    flashColor: '255,210,80',
+    feedback: null,
+    particles: [],
+    rng: mulberry32(1),
+    lastT: 0,
+    time: 0,
+    records: []
+  };
+
+  // ---------- 排行榜接口（双模式，基于 U） ----------
+  const rankAPI = {
+    // 获取历史记录（本机榜）
+    getRecords() { return U.records.slice(); },
+
+    // 提交本局成绩（mode: 'normal'|'daily'）
+    submitScore(score, maxCombo, mode) {
+      U.records.push({ score, ts: Date.now() });
+      U.records.sort((a, b) => b.score - a.score);
+      U.records = U.records.slice(0, 5);
+      const prev = mode === 'daily' ? U.bestDaily : U.bestNormal;
+      const newBest = Math.max(prev, score);
+      if (mode === 'daily') U.bestDaily = newBest; else U.bestNormal = newBest;
+      // cloud 模式上报（上线抖音时启用）
+      if (RANK_MODE === 'cloud') this._submitCloud(score, maxCombo, mode);
+      saveUserData(U);
+      return { best: newBest, records: U.records.slice() };
+    },
+
+    // 获取某模式最高分
+    getBest(mode) { return mode === 'daily' ? U.bestDaily : U.bestNormal; },
+
+    // 打开好友排行榜
+    showFriendRank() {
+      if (RANK_MODE === 'cloud') this._showFriendRankCloud();
+      else this._showFriendRankLocal();
+    },
+
+    // --- 内部实现 ---
+    _showFriendRankLocal() {
+      const mine = U.records[0] ? U.records[0].score : 0;
+      const friends = [
+        { name: '我', score: mine, me: true },
+        { name: '小明', score: Math.max(1200, mine - 300) },
+        { name: '阿强', score: 980 },
+        { name: '丽丽', score: 760 },
+        { name: '大刘', score: 540 }
+      ];
+      friends.sort((a, b) => b.score - a.score);
+      showFriendRankPanel(friends, '(本地模拟 · 上线后为真实好友)');
+    },
+
+    _showFriendRankCloud() {
+      // 主域通知开放数据域绘制好友排行，再把 sharedCanvas 贴到面板
+      const openData = tt.getOpenDataContext();
+      openData.postMessage({ type: 'showFriendRank', key: CLOUD_SCORE_KEY });
+      showFriendRankPanelWithCanvas(openData.canvas);
+    },
+
+    _submitCloud(score, maxCombo, mode) {
+      const value = JSON.stringify({
+        wxgame: { score, update_time: Math.floor(Date.now() / 1000) },
+        maxCombo, mode
+      });
+      tt.setUserCloudStorage({
+        KVDataList: [{ key: CLOUD_SCORE_KEY, value }],
+        success: () => {},
+        fail: (err) => { console.warn('setUserCloudStorage fail', err); }
+      });
+    }
+  };
+
+  // ---------- 广告接口（双模式：浏览器 mock / 抖音真实） ----------
+  // 所有广告调用都走这里，切换平台只改 USE_REAL_ADS 开关。
+  // USE_REAL_ADS = false → 浏览器原型：看广告=等 1.2 秒
+  // USE_REAL_ADS = true  → 抖音小游戏：调 tt.createRewardedVideoAd / tt.createInterstitialAd
+  const USE_REAL_ADS = false;
+  let _rvAd = null; // 激励视频实例
+  let _itAd = null; // 插屏实例
+
+  const adAPI = {
+    // 激励视频：看完成功才回调
+    // onSuccess()：广告看完了
+    // onFail(reason)：取消 / 失败
+    watchRewarded(onSuccess, onFail) {
+      if (!USE_REAL_ADS) {
+        // 浏览器 mock：延迟 1.2 秒模拟看完
+        const modal = showLoading('播放广告中…');
+        setTimeout(() => {
+          hideLoading(modal);
+          _recordAd();
+          onSuccess && onSuccess();
+        }, 1200);
+        return;
+      }
+      // 真实抖音激励视频
+      if (!_rvAd) {
+        _rvAd = tt.createRewardedVideoAd({ adUnitId: RV_AD_UNIT_ID });
+        _rvAd.onClose((res) => {
+          if (res.isEnded) {
+            _recordAd();
+            onSuccess && onSuccess();
+          } else {
+            onFail && onFail('未看完');
+          }
+        });
+        _rvAd.onError(() => { onFail && onFail('加载失败'); });
+      }
+      _rvAd.show().catch(() => { _rvAd.load().then(() => _rvAd.show()).catch(() => onFail && onFail('无法播放')); });
+    },
+
+    // 插屏广告（被动曝光，不需要回调奖励）
+    showInterstitial() {
+      U.settleCount = (U.settleCount || 0) + 1;
+      if (U.settleCount % RULES.INTERSTITIAL_EVERY !== 0) return; // 不是触发点就跳过
+      if (!USE_REAL_ADS) { _recordInterstitial(); return; } // 浏览器原型静默
+      if (!_itAd) {
+        _itAd = tt.createInterstitialAd({ adUnitId: IT_AD_UNIT_ID });
+        _itAd.onLoad(() => { _itAd.show().catch(() => {}); });
+        _itAd.onError(() => {});
+      }
+      _recordInterstitial();
+    }
+  };
+
+  function _recordAd() {
+    U.todayAdsWatched = (U.todayAdsWatched || 0) + 1;
+    U.totalAdsWatched = (U.totalAdsWatched || 0) + 1;
+    saveUserData(U);
+  }
+  function _recordInterstitial() {
+    U.totalInterstitial = (U.totalInterstitial || 0) + 1;
+    saveUserData(U);
+  }
+
+  // 抖音广告位 ID（上线时在后台"流量主"创建后填入；本地原型不用）
+  const RV_AD_UNIT_ID = 'adunit_placeholder_rewarded';
+  const IT_AD_UNIT_ID = 'adunit_placeholder_interstitial';
+
+  // ---------- 水瓶活动 ----------
+  const bottleActivity = {
+    // 检查本局是否达成收集条件（游戏结束时调用）
+    // 返回：{ canCollect: bool, reason: string, doubled: bool }
+    checkCollect(score) {
+      if (U.bottlesClaimed) return { canCollect: false, reason: '今日已收集', doubled: false };
+      if (score < RULES.BOTTLE_SCORE) return { canCollect: false, reason: '需 ' + RULES.BOTTLE_SCORE + ' 分' };
+      if (U.todayAdsWatched < RULES.BOTTLE_AD_VIEWS) {
+        return { canCollect: false, reason: '今日还需 ' + (RULES.BOTTLE_AD_VIEWS - U.todayAdsWatched) + ' 次广告' };
+      }
+      return { canCollect: true, reason: '收集成功！' };
+    },
+
+    // 正式收集 1 瓶（doubled=true 变 2 瓶）
+    collect(doubled) {
+      const n = doubled ? 2 : 1;
+      U.bottles += n;
+      U.bottlesClaimed = true;
+      saveUserData(U);
+      return U.bottles;
+    },
+
+    // 分享领奖（每天 1 次）
+    claimShareBottle() {
+      if (U.shareBottleClaimed) return { ok: false, msg: '今日已领过分享奖励' };
+      U.bottles += RULES.SHARE_DAILY_BOTTLE;
+      U.shareBottleClaimed = true;
+      saveUserData(U);
+      return { ok: true, bottles: U.bottles };
+    },
+
+    // 是否还能玩免费（每日 1 次 + 累计额外次数）
+    hasFreePlay() {
+      if (!U.freePlayUsed) return true;
+      if (U.extraFreePlays > 0) return true;
+      return false;
+    },
+
+    // 消耗 1 次免费机会（优先用每日的，再用额外的）
+    consumeFreePlay() {
+      if (!U.freePlayUsed) { U.freePlayUsed = true; }
+      else if (U.extraFreePlays > 0) { U.extraFreePlays -= 1; }
+      saveUserData(U);
+    },
+
+    // 道具兑换：消耗水瓶换虚拟道具（合规，成本 = 0）
+    exchangeItem(itemId) {
+      const item = ITEMS.find(it => it.id === itemId);
+      if (!item) return { ok: false, msg: '道具不存在' };
+      const exchanged = (U.exchangedItems && U.exchangedItems[itemId]) || 0;
+      if (item.stock !== -1 && exchanged >= item.stock) return { ok: false, msg: '该道具已兑完' };
+      if (U.bottles < item.cost) return { ok: false, msg: '还差 ' + (item.cost - U.bottles) + ' 瓶' };
+      U.bottles -= item.cost;
+      item.effect(U);
+      U.exchangedItems = U.exchangedItems || {};
+      U.exchangedItems[itemId] = exchanged + 1;
+      saveUserData(U);
+      return { ok: true, msg: '兑换成功：' + item.name };
+    },
+
+    // 查询某道具是否已解锁（皮肤用）
+    hasItem(itemId) {
+      const item = ITEMS.find(it => it.id === itemId);
+      if (!item) return false;
+      if (item.id === 'freeplay_3') return (U.extraFreePlays || 0) > 0;
+      if (item.id === 'revive_forever') return !!U.hasForeverRevive;
+      if (item.id === 'revive_7d') return (U.reviveUntil || 0) > Date.now();
+      return (U.unlockedSkins || []).includes(itemId.replace('skin_', ''));
+    },
+
+    // 是否有复活特权（永久 或 限时未过期）
+    hasRevivePrivilege() {
+      if (U.hasForeverRevive) return true;
+      if ((U.reviveUntil || 0) > Date.now()) return true;
+      return false;
+    }
+  };
+
+  // rankAPI 定义完成后，回填 G 的最高分和记录
+  G.best = rankAPI.getBest('normal');
+  G.dailyBest = rankAPI.getBest('daily');
+  G.records = rankAPI.getRecords();
+
+  function dateLabel(ts) {
+    const d = new Date(ts);
+    return (d.getMonth() + 1) + '/' + d.getDate();
+  }
+
+  function renderRank(el) {
+    const list = rankAPI.getRecords().slice(0, 5);
+    if (!list.length) {
+      el.innerHTML = '<li><span>—</span><span class="s">还没有记录</span><span class="d"></span></li>';
+      return;
+    }
+    el.innerHTML = list.map((r, i) =>
+      '<li><span>' + (i + 1) + '</span><span class="s">' + r.score + '</span><span class="d">' + dateLabel(r.ts) + '</span></li>'
+    ).join('');
+  }
+
+  // 保存本局成绩 → 统一走 rankAPI（双模式）
+  function saveRecord() {
+    const res = rankAPI.submitScore(G.score, G.maxCombo, G.mode);
+    G.records = res.records;
+    if (G.mode === 'daily') {
+      G.dailyBest = res.best;
+    } else {
+      G.best = res.best;
+    }
+  }
+
+  // ---------- 布局 ----------
+  function layoutGlass() {
+    const g = G.glass;
+    const maxW = Math.min(W * 0.52, 300);
+    g.w = Math.max(W * 0.30, maxW - (G.round - 1) * 4);
+    g.h = Math.min(H * 0.40, 340);
+    g.cx = W / 2;
+    g.cy = H * 0.56;
+  }
+
+  function newRound() {
+    G.round += 1;
+    G.level = 0;
+    G.speed = Math.min(0.28 + G.round * 0.045, 0.95);
+    // 最低水位：每回合抬升，可得分区间不断缩短（直到只剩杯口附近）
+    G.minLevel = Math.min(0.40 + (G.round - 1) * 0.04, 0.96);
+    G.roundType = pickRoundType(G.round, G.rng);
+    G.surgeTimer = G.roundType === 'surge' ? 0.5 + G.rng() * 0.8 : -1;
+    G.surgeActive = false;
+    G.state = 'play';
+    layoutGlass();
+    G.feedback = null;
+    updateHud();
+    // 里程碑奖励：第 20 关起，每 5 关 +1 瓶（每档一次）
+    if (G.round >= MILESTONE_START
+        && (G.round - MILESTONE_START) % MILESTONE_STEP === 0
+        && !U.milestoneClaimed.includes(G.round)) {
+      U.milestoneClaimed.push(G.round);
+      U.bottles += 1;
+      saveUserData(U);
+      showToast('🎉 里程碑奖励：第 ' + G.round + ' 关达成！+1 瓶');
+    }
+  }
+
+  // ---------- UI 辅助 ----------
+  function showLoading(text) {
+    const el = $('loadingMask');
+    $('loadingText').textContent = text || '加载中…';
+    el.style.display = 'flex';
+    el.classList.remove('hide');
+    return el;
+  }
+  function hideLoading(el) {
+    if (el) { el.style.display = 'none'; el.classList.add('hide'); }
+    else { $('loadingMask').style.display = 'none'; $('loadingMask').classList.add('hide'); }
+  }
+  function showToast(msg, duration) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => { t.style.opacity = '0'; }, duration || 1400);
+  }
+
+  // 刷新水瓶活动面板里的状态（每次打开面板时调用）
+  function refreshBottlePanel() {
+    $('bottleCount').textContent = U.bottles;
+    $('bpFree').textContent = bottleActivity.hasFreePlay()
+      ? '未用 / 1' + (U.extraFreePlays ? ' + ' + U.extraFreePlays + ' 额外' : '')
+      : (U.extraFreePlays ? U.extraFreePlays + ' 次额外可用' : '已用完');
+    $('bpAds').textContent = U.todayAdsWatched;
+    $('bpCollect').textContent = U.bottlesClaimed ? '已收集 ✓' : '未收集';
+    $('bpShare').textContent = U.shareBottleClaimed ? '已领取 ✓' : '未领取';
+    $('bpShareBtn').disabled = !!U.shareBottleClaimed;
+    $('bpShareBtn').textContent = U.shareBottleClaimed ? '已领过分享奖励' : '📣 分 享 得 1 瓶（每 日 1 次）';
+    renderSkinList();
+  }
+
+  function renderSkinList() {
+    const list = $('skinList');
+    list.innerHTML = '';
+    Object.keys(SKINS).forEach(skinKey => {
+      const s = SKINS[skinKey];
+      const unlocked = skinKey === 'default'
+        || (U.unlockedSkins || []).includes(skinKey);
+      const equipped = U.equippedSkin === skinKey;
+      const cell = document.createElement('div');
+      cell.style.cssText = 'text-align:center;padding:10px 4px;border-radius:10px;border:2px solid '
+        + (equipped ? '#ffd45e' : unlocked ? 'rgba(205,238,255,.25)' : 'rgba(255,255,255,.08)')
+        + ';background:'
+        + (equipped ? 'rgba(255,212,94,.18)' : 'rgba(255,255,255,.05)')
+        + ';opacity:' + (unlocked ? '1' : '0.4')
+        + ';cursor:' + (unlocked ? 'pointer' : 'not-allowed') + ';';
+      cell.innerHTML =
+        '<div style="font-size:28px;">' + s.icon + '</div>'
+        + '<div style="font-size:11px;color:' + (unlocked ? '#e5ecf8' : '#6f8bb0') + ';margin-top:3px;">' + s.name + '</div>'
+        + '<div style="font-size:10px;color:' + (equipped ? '#ffd45e' : unlocked ? '#6f8bb0' : '#555') + ';margin-top:3px;">'
+        + (equipped ? '✓ 装备中' : unlocked ? '点我装备' : '未解锁') + '</div>';
+      cell.addEventListener('click', () => {
+        if (!unlocked) { showToast('先去兑换解锁'); return; }
+        if (equipped) return;
+        U.equippedSkin = skinKey;
+        saveUserData(U);
+        renderSkinList();
+        showToast('已装备：' + s.name);
+      });
+      list.appendChild(cell);
+    });
+  }
+
+  function openItemsPanel() {
+    $('ipCurrBottle').textContent = U.bottles;
+    const list = $('itemsList');
+    list.innerHTML = '';
+    ITEMS.forEach(item => {
+      const exchanged = (U.exchangedItems && U.exchangedItems[item.id]) || 0;
+      const owned = bottleActivity.hasItem(item.id);
+      const canAfford = U.bottles >= item.cost;
+      const outOfStock = item.stock !== -1 && exchanged >= item.stock;
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:12px;margin-bottom:10px;padding:10px 12px;background:rgba(255,255,255,.06);border-radius:10px;border:1px solid rgba(255,255,255,.1);';
+      row.innerHTML =
+        '<div style="font-size:32px;flex-shrink:0;">' + item.icon + '</div>'
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-size:14px;color:#e5ecf8;font-weight:600;">' + item.name + '</div>'
+        + '<div style="font-size:11px;color:#a7b5d5;margin-top:3px;">' + item.desc + '</div>'
+        + '<div style="font-size:12px;color:#ffd45e;margin-top:4px;">🍶 ' + item.cost + ' 瓶'
+        + (item.stock === 1 ? '　·　限兑 1 次' : item.stock > 1 ? '　·　剩 ' + (item.stock - exchanged) + ' 份' : '')
+        + '</div>'
+        + '</div>'
+        + '<button class="btn" data-item="' + item.id + '" style="font-size:12px;padding:6px 14px;letter-spacing:1px;'
+        + (owned ? 'background:linear-gradient(180deg,#6f8bb0,#4a6080);' :
+           outOfStock ? 'background:linear-gradient(180deg,#6f8bb0,#4a6080);' :
+           canAfford ? 'background:linear-gradient(180deg,#a8ffc0,#2ad084);' : 'background:linear-gradient(180deg,#6f8bb0,#4a6080);')
+        + 'margin:0;">'
+        + (owned ? '已拥有' : outOfStock ? '已兑完' : canAfford ? '兑 换' : '瓶 子 不 够')
+        + '</button>';
+      list.appendChild(row);
+    });
+    list.querySelectorAll('button[data-item]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const r = bottleActivity.exchangeItem(btn.dataset.item);
+        showToast(r.msg);
+        refreshBottlePanel();
+        openItemsPanel(); // 重绘
+      });
+    });
+    $('itemsPanel').classList.remove('hide');
+  }
+  function closeItemsPanel() { $('itemsPanel').classList.add('hide'); }
+
+  function refreshMenuFreePlay() {
+    const btn = $('startBtn');
+    if (bottleActivity.hasFreePlay()) {
+      btn.textContent = '开 始（今日免费）';
+      btn.style.background = '';
+      btn.style.boxShadow = '';
+    } else {
+      btn.textContent = '开 始（已用免费次数）';
+      btn.style.background = 'linear-gradient(180deg,#6f8bb0,#4a6080)';
+      btn.style.boxShadow = 'none';
+    }
+  }
+
+  // ---------- 游戏循环（含免费次数 / 广告 / 水瓶收集） ----------
+  function startGame(mode, opts) {
+    opts = opts || {};
+
+    // 菜单进入时检查免费次数（从"再来一局"按钮进来就跳过）
+    if (!opts.fromAgain) {
+      if (bottleActivity.hasFreePlay()) {
+        bottleActivity.consumeFreePlay();
+      } else {
+        // 无免费次数 → 必须看广告
+        adAPI.watchRewarded(() => {
+          _doStartGame(mode);
+          showToast('奖励：+1 次游戏机会');
+        }, (reason) => {
+          showToast('没看完，不给玩 😡');
+        });
+        return;
+      }
+    }
+
+    _doStartGame(mode);
+  }
+
+  function _doStartGame(mode) {
+    G.mode = mode || 'normal';
+    G.state = 'play';
+    G.score = 0;
+    G.combo = 0;
+    G.maxCombo = 0;
+    G.lives = 3;
+    G.round = 1;
+    G.level = 0;
+    G.minLevel = 0.40;
+    G.speed = 0.3;
+    G.roundType = 'normal';
+    G.surgeTimer = -1;
+    G.surgeActive = false;
+    G.feedback = null;
+    G.particles.length = 0;
+    G.rng = G.mode === 'daily' ? mulberry32(dailySeed()) : mulberry32(Date.now() & 0xffffffff);
+    layoutGlass();
+    $('menu').classList.add('hide');
+    $('over').classList.add('hide');
+    updateHud();
+    beep(520, 0.12, 'sine', 0.05);
+  }
+
+  function updateHud() {
+    $('score').textContent = G.score;
+    $('best').textContent = G.mode === 'daily' ? G.dailyBest : G.best;
+    $('round').textContent = (G.mode === 'daily' ? '今日 ' : '') + '第 ' + G.round + ' 关';
+    $('hearts').textContent = '❤'.repeat(Math.max(G.lives, 0)) + '♡'.repeat(Math.max(3 - G.lives, 0));
+    const tag = $('roundTag');
+    const map = { normal: '　', narrow: '窄口杯', wobble: '晃动杯', surge: '涌动关' };
+    tag.textContent = map[G.roundType] || '　';
+  }
+
+  // ---------- 判定 ----------
+  function tap() {
+    if (G.state !== 'play') return;
+    const pct = G.level * 100;
+
+    // 溢出 → 失败
+    if (G.level >= 1) { overflow(); return; }
+    // 低于最低水位 → 失败
+    if (G.level < G.minLevel) { tooLow(); return; }
+
+    // 窄口杯的判定区间更严
+    const narrow = G.roundType === 'narrow';
+    const perfectLine = narrow ? 97 : 95;
+    const greatLine   = narrow ? 90 : 85;
+    const goodLine    = narrow ? 76 : 70;
+
+    let base, label, color, perfect = false;
+
+    if (pct >= perfectLine)  { base = 1000; label = 'PERFECT'; color = '#ffd45e'; perfect = true; }
+    else if (pct >= greatLine){ base = 600;  label = '优秀';     color = '#7fe4ff'; }
+    else if (pct >= goodLine) { base = 350;  label = '不错';     color = '#9ad8ff'; }
+    else                       { base = 150;  label = '一般';     color = '#9aa8c8'; }
+
+    if (perfect) {
+      G.combo += 1;
+      G.maxCombo = Math.max(G.maxCombo, G.combo);
+    } else {
+      G.combo = 0;
+    }
+
+    const mult = 1 + G.combo * 0.15;
+    const gained = Math.round(base * mult);
+    G.score += gained;
+
+    // 差值与针对性提示
+    const diff = 100 - pct;
+    let hint;
+    if (diff <= 0.5)        hint = '就差一点点！';
+    else if (diff <= 3)     hint = '再晚一点点';
+    else if (diff <= 10)    hint = '再晚一点停';
+    else if (diff <= 20)    hint = '停早了';
+    else                     hint = '停太早了';
+
+    G.feedback = {
+      pct: pct,
+      label: label,
+      color: color,
+      gain: gained,
+      combo: G.combo,
+      diff: diff,
+      hint: hint,
+      t: 0,
+      life: 1.25
+    };
+
+    if (perfect) { G.flash = 0.55; G.flashColor = '255,210,90'; beep(880, 0.18, 'triangle', 0.07); beep(1320, 0.12, 'sine', 0.04); }
+    else { beep(420, 0.1, 'sine', 0.05); }
+
+    G.state = 'wait';
+    updateHud();
+
+    setTimeout(() => {
+      if (G.state !== 'wait') return;
+      newRound();
+    }, 1200);
+  }
+
+  function overflow() {
+    G.lives -= 1;
+    G.combo = 0;
+    G.shake = 1;
+    G.flash = 0.5;
+    G.flashColor = '255,80,80';
+    G.feedback = {
+      pct: 100, label: '溢出！', color: '#ff6b6b', gain: 0, combo: 0,
+      diff: -((G.level - 1) * 100), hint: '早停一点就好',
+      t: 0, life: 1.25
+    };
+    makeSplash();
+    beep(160, 0.25, 'sawtooth', 0.06);
+    updateHud();
+
+    if (G.lives <= 0) {
+      G.state = 'wait';
+      // 最后一次失败 → 弹复活按钮，给 10 秒决定
+      setTimeout(() => offerRevive('溢出了…看广告复活？', '早停一点就好'), 900);
+    } else {
+      G.state = 'wait';
+      setTimeout(() => {
+        if (G.state !== 'wait') return;
+        newRound();
+      }, 1100);
+    }
+  }
+
+  // 水位低于最低线 → 失败
+  function tooLow() {
+    const pct = G.level * 100;
+    const minPct = G.minLevel * 100;
+    G.lives -= 1;
+    G.combo = 0;
+    G.shake = 0.6;
+    G.flash = 0.4;
+    G.flashColor = '255,160,60';
+    G.feedback = {
+      pct: pct, label: '太少了！', color: '#ffaa55', gain: 0, combo: 0,
+      diff: minPct - pct, hint: '再晚一点停',
+      t: 0, life: 1.25
+    };
+    beep(180, 0.2, 'square', 0.04);
+    updateHud();
+
+    if (G.lives <= 0) {
+      G.state = 'wait';
+      setTimeout(() => offerRevive('停太早了…看广告复活？', '再晚一点停'), 900);
+    } else {
+      G.state = 'wait';
+      setTimeout(() => {
+        if (G.state !== 'wait') return;
+        newRound();
+      }, 1100);
+    }
+  }
+
+  function makeSplash() {
+    const g = G.glass;
+    const x = g.cx;
+    const y = g.cy - g.h / 2 + 6;
+    for (let i = 0; i < 26; i++) {
+      G.particles.push({
+        x: x + (Math.random() - 0.5) * g.w,
+        y: y,
+        vx: (Math.random() - 0.5) * 260,
+        vy: -Math.random() * 240 - 40,
+        life: 1,
+        r: 2 + Math.random() * 4
+      });
+    }
+  }
+
+  // 复活弹层：lives 已扣到 0 时，先尝试复活，复活失败/拒绝则进入 gameOver
+  function offerRevive(msg, hint) {
+    const hasPrivilege = bottleActivity.hasRevivePrivilege();
+    // 构造弹层（特权模式多一个"用特权复活"按钮）
+    const mask = document.createElement('div');
+    mask.style.cssText = 'position:fixed;inset:0;background:rgba(5,10,20,.88);z-index:150;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#e5ecf8;font-family:-apple-system,"PingFang SC",sans-serif;';
+    const privilegeBtn = hasPrivilege
+      ? '<button id="rvPriv" class="btn" style="font-size:13px;padding:10px 28px;letter-spacing:2px;background:linear-gradient(180deg,#ffd45e,#ff9e2b);margin:0 0 10px 0;">👑 用特权免费复活</button>'
+      : '';
+    mask.innerHTML = '<div style="font-size:36px;margin-bottom:16px;">😵</div>'
+      + '<div style="font-size:16px;margin-bottom:8px;color:#ff9090;">' + msg + '</div>'
+      + '<div style="font-size:12px;color:#a7b5d5;margin-bottom:20px;">' + hint + '</div>'
+      + privilegeBtn
+      + '<div style="display:flex;gap:14px;">'
+      + '<button id="rvYes" class="btn" style="font-size:13px;padding:10px 28px;letter-spacing:2px;background:linear-gradient(180deg,#a8ffc0,#2ad084);margin:0;">📺 看广告复活</button>'
+      + '<button id="rvNo"  class="btn" style="font-size:13px;padding:10px 28px;letter-spacing:2px;background:linear-gradient(180deg,#6f8bb0,#4a6080);margin:0;">就 此 放 弃</button>'
+      + '</div>';
+    document.body.appendChild(mask);
+
+    let handled = false;
+    const done = () => { if (!handled) { handled = true; mask.remove(); } };
+    const _applyRevive = () => {
+      G.lives = 1;
+      G.combo = 0;
+      G.level = 0;
+      G.minLevel = Math.min(0.40 + G.round * 0.04, 0.96);
+      G.surgeTimer = -1;
+      G.state = 'play';
+      G.feedback = { pct: 0, label: '复活！', color: '#2ad084', gain: 0, combo: 0, diff: 0, hint: '', t: 0, life: 1.2 };
+      showToast('复活成功！');
+      updateHud();
+    };
+
+    // 10 秒超时自动放弃
+    const timeout = setTimeout(() => {
+      if (!handled) { done(); gameOver(); }
+    }, 12000);
+
+    // 特权免费复活
+    if (hasPrivilege) {
+      mask.querySelector('#rvPriv').onclick = () => {
+        if (handled) return;
+        done(); clearTimeout(timeout);
+        _applyRevive();
+      };
+    }
+    mask.querySelector('#rvYes').onclick = () => {
+      if (handled) return;
+      adAPI.watchRewarded(() => {
+        done(); clearTimeout(timeout);
+        _applyRevive();
+      }, () => {
+        showToast('没看完，放弃了');
+        done(); clearTimeout(timeout);
+        gameOver();
+      });
+    };
+    mask.querySelector('#rvNo').onclick = () => {
+      done(); clearTimeout(timeout);
+      gameOver();
+    };
+  }
+
+  function gameOver(reason) {
+    G.state = 'over';
+    saveRecord();
+    $('finalScore').textContent = G.score;
+    const bestLabel = G.mode === 'daily' ? '今日最佳 ' + G.dailyBest : '纪录 ' + G.best;
+    $('finalMeta').textContent = '最高连击 ' + G.maxCombo + '　·　' + bestLabel;
+    renderRank($('rankOver'));
+    beep(300, 0.3, 'sine', 0.05);
+
+    // 插屏广告：每 3 次结算触发一次
+    adAPI.showInterstitial();
+
+    // 水瓶收集检查
+    const check = bottleActivity.checkCollect(G.score);
+    const hint = $('bottleHint');
+    const collectBtn = $('bottleCollectBtn');
+    const doubleBtn = $('bottleDoubleBtn');
+
+    if (check.canCollect) {
+      hint.style.display = 'block';
+      hint.innerHTML = '🎉 达成收集条件！<b style="color:#2ad084;">收集 1 瓶</b>，看广告可加倍成 <b style="color:#ffd45e;">2 瓶</b>';
+      collectBtn.style.display = 'block';
+      doubleBtn.style.display = 'block';
+      collectBtn.onclick = () => {
+        const n = bottleActivity.collect(false);
+        collectBtn.style.display = 'none';
+        doubleBtn.style.display = 'none';
+        hint.innerHTML = '✓ 收集成功！当前 <b style="color:#2ad084;">' + n + ' 瓶</b>（去兑换道具 →）';
+      };
+      doubleBtn.onclick = () => {
+        adAPI.watchRewarded(() => {
+          const n = bottleActivity.collect(true);
+          collectBtn.style.display = 'none';
+          doubleBtn.style.display = 'none';
+          hint.innerHTML = '✓ 加倍成功！收集 <b style="color:#2ad084;">2 瓶</b>，当前 <b style="color:#2ad084;">' + n + ' 瓶</b>';
+          showToast('+2 瓶');
+        }, () => showToast('没看完，不加倍'));
+      };
+    } else {
+      hint.style.display = 'block';
+      hint.style.color = '#ff9090';
+      hint.style.background = 'rgba(255,100,100,.12)';
+      hint.style.border = '1px solid rgba(255,100,100,.4)';
+      hint.textContent = '水瓶条件未达成：' + check.reason;
+      collectBtn.style.display = 'none';
+      doubleBtn.style.display = 'none';
+    }
+
+    // 再来一局按钮：免费次数用完就显示广告版
+    const againBtn = $('againBtn');
+    const adPlayBtn = $('adPlayBtn');
+    if (bottleActivity.hasFreePlay()) {
+      againBtn.textContent = '再 来 一 局（免费）';
+      adPlayBtn.style.display = 'none';
+    } else {
+      againBtn.style.display = 'none';
+      adPlayBtn.style.display = 'block';
+    }
+
+    $('over').classList.remove('hide');
+  }
+
+  function shareText() {
+    const mode = G.mode === 'daily' ? '【今日挑战】' : '';
+    return '《灌不满气死你》' + mode + '\n'
+      + '我得了 ' + G.score + ' 分，最高连击 ' + G.maxCombo + '\n'
+      + '今天你能超过我吗？';
+  }
+
+  // 生成可下载的分享卡片图
+  function makeShareCard() {
+    const cw = 750, ch = 1000;
+    const c = document.createElement('canvas');
+    c.width = cw; c.height = ch;
+    const cx = c.getContext('2d');
+
+    // 背景渐变
+    const bg = cx.createLinearGradient(0, 0, 0, ch);
+    bg.addColorStop(0, '#0b1020');
+    bg.addColorStop(1, '#1a2340');
+    cx.fillStyle = bg;
+    cx.fillRect(0, 0, cw, ch);
+
+    // 装饰圆
+    cx.fillStyle = 'rgba(120,180,255,.08)';
+    cx.beginPath(); cx.arc(100, 150, 180, 0, Math.PI * 2); cx.fill();
+    cx.beginPath(); cx.arc(650, 850, 220, 0, Math.PI * 2); cx.fill();
+
+    // 标题
+    cx.fillStyle = '#ffd45e';
+    cx.font = 'bold 56px -apple-system,"PingFang SC",sans-serif';
+    cx.textAlign = 'center';
+    cx.fillText('灌不满气死你', cw / 2, 130);
+
+    cx.fillStyle = 'rgba(255,255,255,.5)';
+    cx.font = '24px -apple-system,"PingFang SC",sans-serif';
+    cx.fillText(G.mode === 'daily' ? '今日挑战' : '手感挑战', cw / 2, 175);
+
+    // 杯子图示
+    const gx = cw / 2, gy = 360, gw = 180, gh = 220;
+    const g = cx.createLinearGradient(gx - gw / 2, gy, gx + gw / 2, gy);
+    g.addColorStop(0, 'rgba(255,255,255,.35)');
+    g.addColorStop(0.5, 'rgba(255,255,255,.18)');
+    g.addColorStop(1, 'rgba(255,255,255,.35)');
+    cx.strokeStyle = g; cx.lineWidth = 8; cx.lineJoin = 'round';
+    cx.beginPath();
+    cx.moveTo(gx - gw / 2, gy - gh / 2);
+    cx.lineTo(gx - gw / 2 + 20, gy + gh / 2);
+    cx.lineTo(gx + gw / 2 - 20, gy + gh / 2);
+    cx.lineTo(gx + gw / 2, gy - gh / 2);
+    cx.stroke();
+
+    // 水（按得分比例显示，视觉上接近满）
+    const waterH = Math.min(0.92, G.score > 0 ? 0.6 + (G.score % 1000) / 1000 * 0.3 : 0.3) * gh;
+    const wy = gy + gh / 2 - waterH;
+    cx.save();
+    cx.beginPath();
+    cx.moveTo(gx - gw / 2 + 4, gy - gh / 2 + 8);
+    cx.lineTo(gx - gw / 2 + 22, gy + gh / 2 - 4);
+    cx.lineTo(gx + gw / 2 - 22, gy + gh / 2 - 4);
+    cx.lineTo(gx + gw / 2 - 4, gy - gh / 2 + 8);
+    cx.closePath();
+    cx.clip();
+    const wg = cx.createLinearGradient(0, wy, 0, gy + gh / 2);
+    wg.addColorStop(0, '#5fd6ff');
+    wg.addColorStop(1, '#2a8be0');
+    cx.fillStyle = wg;
+    cx.fillRect(gx - gw, wy, gw * 2, gh);
+    cx.restore();
+
+    // 分数
+    cx.fillStyle = '#ffffff';
+    cx.font = 'bold 120px -apple-system,"PingFang SC",sans-serif';
+    cx.fillText(G.score, cw / 2, 720);
+
+    cx.fillStyle = 'rgba(255,255,255,.6)';
+    cx.font = '28px -apple-system,"PingFang SC",sans-serif';
+    cx.fillText('本局得分', cw / 2, 765);
+
+    // 连击 + 模式
+    cx.fillStyle = '#ffd45e';
+    cx.font = '32px -apple-system,"PingFang SC",sans-serif';
+    cx.fillText('最高连击  x' + G.maxCombo, cw / 2, 830);
+
+    // 底部号召
+    cx.fillStyle = 'rgba(255,255,255,.75)';
+    cx.font = '26px -apple-system,"PingFang SC",sans-serif';
+    cx.fillText('你能灌得更满吗？', cw / 2, 900);
+
+    cx.fillStyle = 'rgba(255,255,255,.35)';
+    cx.font = '20px -apple-system,"PingFang SC",sans-serif';
+    cx.fillText('《灌不满气死你》', cw / 2, 950);
+
+    return c;
+  }
+
+  function shareCard() {
+    const c = makeShareCard();
+    const dataUrl = c.toDataURL('image/png');
+    // 触发下载
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = '灌不满气死你_' + G.score + '分.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // 同时复制文字（双保险）
+    copyText(shareText());
+    const btn = $('shareBtn');
+    const old = btn.textContent;
+    btn.textContent = '已保存 ✓';
+    setTimeout(() => { btn.textContent = old; }, 1800);
+  }
+
+  function copyText(text) {
+    try {
+      navigator.clipboard.writeText(text);
+    } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (err) {}
+      document.body.removeChild(ta);
+    }
+  }
+
+  // ---------- 循环 ----------
+  function update(dt) {
+    G.time += dt;
+    if (G.state === 'play') {
+      let spd = G.speed;
+      if (G.roundType === 'wobble') {
+        spd = G.speed * (1 + 0.24 * Math.sin(G.time * 5.2));
+      }
+      if (G.roundType === 'surge') {
+        if (G.surgeTimer > 0) {
+          G.surgeTimer -= dt;
+        } else {
+          G.surgeActive = !G.surgeActive;
+          G.surgeTimer = G.surgeActive ? 0.32 : (0.7 + G.rng() * 0.5);
+        }
+        if (G.surgeActive) spd = G.speed * 2.4;
+      }
+      G.level += spd * dt;
+      if (G.level >= 1) overflow();
+    }
+    if (G.shake > 0) G.shake = Math.max(0, G.shake - dt * 3.2);
+    if (G.flash > 0) G.flash = Math.max(0, G.flash - dt * 2.2);
+    if (G.feedback) {
+      G.feedback.t += dt;
+      if (G.feedback.t > G.feedback.life) G.feedback = null;
+    }
+    for (let i = G.particles.length - 1; i >= 0; i--) {
+      const p = G.particles[i];
+      p.vy += 520 * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life -= dt * 0.9;
+      if (p.life <= 0) G.particles.splice(i, 1);
+    }
+  }
+
+  function glassPath(inset) {
+    const g = G.glass;
+    const x = g.cx - g.w / 2 + inset;
+    const y = g.cy - g.h / 2 + inset;
+    const w = g.w - inset * 2;
+    const h = g.h - inset * 2;
+    const r = 22;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  function draw() {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    // 背景
+    const bg = ctx.createRadialGradient(W / 2, H * 0.45, 0, W / 2, H * 0.45, Math.max(W, H) * 0.85);
+    bg.addColorStop(0, '#131c3a');
+    bg.addColorStop(0.55, '#0b1024');
+    bg.addColorStop(1, '#05070f');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // 落点氛围
+    ctx.save();
+    ctx.globalAlpha = 0.20;
+    const halo = ctx.createRadialGradient(W / 2, G.glass.cy, 10, W / 2, G.glass.cy, G.glass.w * 1.6);
+    halo.addColorStop(0, 'rgba(80,190,255,.55)');
+    halo.addColorStop(1, 'rgba(80,190,255,0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+
+    ctx.save();
+    if (G.shake > 0) {
+      const s = G.shake * 9;
+      ctx.translate((Math.random() - 0.5) * s, (Math.random() - 0.5) * s);
+    }
+
+    drawGlass();
+    drawParticles();
+    ctx.restore();
+
+    drawFeedback();
+
+    if (G.flash > 0) {
+      ctx.fillStyle = 'rgba(' + G.flashColor + ',' + (G.flash * 0.30) + ')';
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  function drawGlass() {
+    const g = G.glass;
+    const x = g.cx - g.w / 2;
+    const skin = SKINS[(U && U.equippedSkin) || 'default'] || SKINS.default;
+    const y = g.cy - g.h / 2;
+    const innerH = g.h - 4;
+
+    // 杯身底光
+    ctx.save();
+    ctx.shadowColor = skin.shadow;
+    ctx.shadowBlur = 26;
+    ctx.strokeStyle = skin.stroke;
+    ctx.lineWidth = 3;
+    glassPath(2);
+    ctx.stroke();
+    ctx.restore();
+
+    // 水
+    if (G.level > 0.001) {
+      ctx.save();
+      glassPath(4);
+      ctx.clip();
+
+      const waterTop = y + g.h - G.level * innerH;
+      const wg = ctx.createLinearGradient(0, waterTop, 0, y + g.h);
+      wg.addColorStop(0, '#8ff0ff');
+      wg.addColorStop(0.45, '#3fb6ff');
+      wg.addColorStop(1, '#1a5fd0');
+      ctx.fillStyle = wg;
+      ctx.fillRect(x, waterTop, g.w, g.h);
+
+      // 水面波动
+      const wob = Math.sin(G.time * 7) * 2.2;
+      ctx.beginPath();
+      ctx.moveTo(x, waterTop + wob);
+      ctx.quadraticCurveTo(g.cx, waterTop - 6 + wob, x + g.w, waterTop + wob);
+      ctx.lineTo(x + g.w, waterTop + 10);
+      ctx.lineTo(x, waterTop + 10);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(220,255,255,.75)';
+      ctx.fill();
+
+      // 高光
+      ctx.fillStyle = 'rgba(255,255,255,.18)';
+      ctx.fillRect(x + g.w * 0.12, waterTop + 6, g.w * 0.10, g.h * 0.9);
+
+      // 最低水位线（低于此线判失败）
+      const minY = y + g.h - G.minLevel * innerH;
+      ctx.setLineDash([5, 5]);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(255,150,60,.65)';
+      ctx.beginPath();
+      ctx.moveTo(x + 4, minY);
+      ctx.lineTo(x + g.w - 4, minY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255,170,90,.85)';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('最低', x + 6, minY - 4);
+
+      ctx.restore();
+    }
+
+    // 杯口线（提示）
+    ctx.save();
+    ctx.setLineDash([7, 7]);
+    ctx.lineWidth = 1.5;
+    let rimColor;
+    if (G.roundType === 'narrow') rimColor = 'rgba(255,140,60,.9)';
+    else if (G.roundType === 'surge' && G.surgeActive) rimColor = 'rgba(255,80,80,.95)';
+    else if (G.level > 0.88) rimColor = 'rgba(255,200,80,.85)';
+    else rimColor = 'rgba(255,255,255,.22)';
+    ctx.strokeStyle = rimColor;
+    ctx.beginPath();
+    ctx.moveTo(x + 2, y + 5);
+    ctx.lineTo(x + g.w - 2, y + 5);
+    ctx.stroke();
+
+    // 窄口杯：顶部画两条斜线，提示开口更窄、判定更严
+    if (G.roundType === 'narrow') {
+      ctx.setLineDash([]);
+      ctx.strokeStyle = 'rgba(255,160,80,.55)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x + g.w * 0.18, y + 4);
+      ctx.lineTo(x + g.w * 0.28, y + 34);
+      ctx.moveTo(x + g.w * 0.82, y + 4);
+      ctx.lineTo(x + g.w * 0.72, y + 34);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // 刻度
+    ctx.save();
+    ctx.strokeStyle = 'rgba(200,230,255,.20)';
+    ctx.lineWidth = 1.5;
+    for (let i = 1; i <= 3; i++) {
+      const ty = y + g.h - innerH * (i / 4);
+      ctx.beginPath();
+      ctx.moveTo(x + g.w - 18, ty);
+      ctx.lineTo(x + g.w - 4, ty);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawParticles() {
+    for (const p of G.particles) {
+      ctx.beginPath();
+      ctx.fillStyle = 'rgba(150,230,255,' + Math.max(p.life, 0) * 0.9 + ')';
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawFeedback() {
+    const f = G.feedback;
+    if (!f) return;
+    const k = Math.min(f.t / 0.18, 1);
+    const fade = f.t > f.life - 0.3 ? (f.life - f.t) / 0.3 : 1;
+    const cy = G.glass.cy - G.glass.h / 2 - 54;
+
+    ctx.save();
+    ctx.globalAlpha = Math.max(fade, 0);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const scale = 0.85 + k * 0.15;
+    ctx.translate(G.glass.cx, cy - (1 - k) * 18);
+    ctx.scale(scale, scale);
+
+    ctx.fillStyle = f.color;
+    ctx.font = '800 34px -apple-system,"PingFang SC",sans-serif';
+    ctx.fillText(f.label, 0, 0);
+
+    ctx.fillStyle = 'rgba(230,245,255,.85)';
+    ctx.font = '600 16px -apple-system,"PingFang SC",sans-serif';
+    const d = f.diff;
+    let diffText;
+    if (f.label === '溢出！') {
+      diffText = '超出 ' + Math.abs(d).toFixed(1) + '%';
+    } else if (f.label === '太少了！') {
+      diffText = '低于最低线 ' + d.toFixed(1) + '%';
+    } else if (d <= 0) {
+      diffText = '刚好满';
+    } else {
+      diffText = '差 ' + d.toFixed(1) + '%';
+    }
+    const detail = '停在 ' + f.pct.toFixed(1) + '%（' + diffText + '）' + (f.gain ? '  +' + f.gain : '');
+    ctx.fillText(detail, 0, 30);
+
+    ctx.fillStyle = 'rgba(255,235,170,.9)';
+    ctx.font = '600 14px -apple-system,"PingFang SC",sans-serif';
+    ctx.fillText(f.hint, 0, 54);
+
+    if (f.combo > 1) {
+      ctx.fillStyle = '#ffd45e';
+      ctx.font = '800 18px -apple-system,"PingFang SC",sans-serif';
+      ctx.fillText('连击 x' + f.combo, 0, 80);
+    }
+    ctx.restore();
+  }
+
+  function loop(ts) {
+    const t = ts || 0;
+    const dt = Math.min((t - G.lastT) / 1000, 0.05);
+    G.lastT = t;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- 输入 ----------
+  window.addEventListener('pointerdown', e => {
+    if (e.target.closest && e.target.closest('.btn')) return;
+    if (G.state === 'play') {
+      e.preventDefault();
+      tap();
+    }
+  }, { passive: false });
+
+  $('startBtn').addEventListener('click', () => startGame('normal'));
+  $('againBtn').addEventListener('click', () => startGame(G.mode));
+  $('shareBtn').addEventListener('click', shareCard);
+  $('inviteBtn').addEventListener('click', () => {
+    copyText('《灌不满气死你》\n点一下，让水停在杯口，越满分越高。\n我在这等你，看谁灌得更满！');
+    const btn = $('inviteBtn');
+    const old = btn.textContent;
+    btn.textContent = '邀请语已复制 ✓';
+    setTimeout(() => { btn.textContent = old; }, 1800);
+  });
+  $('friendRankBtn').addEventListener('click', () => rankAPI.showFriendRank());
+  $('friendRankCloseBtn').addEventListener('click', () => $('friendRankPanel').classList.add('hide'));
+  // 水瓶活动
+  $('bottleBtn').addEventListener('click', () => { refreshBottlePanel(); $('bottlePanel').classList.remove('hide'); });
+  $('bottleCloseBtn').addEventListener('click', () => $('bottlePanel').classList.add('hide'));
+  // 道具兑换
+  $('bpItemsBtn').addEventListener('click', () => openItemsPanel());
+  $('itemsCloseBtn').addEventListener('click', () => closeItemsPanel());
+  // 分享领水瓶
+  $('bpShareBtn').addEventListener('click', () => {
+    const r = bottleActivity.claimShareBottle();
+    showToast(r.ok ? '分享成功 +1 瓶' : r.msg);
+    refreshBottlePanel();
+  });
+
+  // ---------- 好友排行表面板渲染 ----------
+  // list: [{name, score, me}]，subtitle: 副标题说明
+  function showFriendRankPanel(list, subtitle) {
+    $('friendRankTitle').textContent = subtitle || '好友排行榜';
+    const ol = $('friendRankOl');
+    if (!list || !list.length) {
+      ol.innerHTML = '<li><span>—</span><span class="s">暂无好友数据</span><span class="d"></span></li>';
+    } else {
+      ol.innerHTML = list.map((r, i) =>
+        '<li style="' + (r.me ? 'color:#ffd45e;font-weight:700;' : '') + '">'
+        + '<span>' + (i + 1) + '</span>'
+        + '<span class="s">' + r.name + (r.me ? '（我）' : '') + '</span>'
+        + '<span class="d">' + r.score + ' 分</span></li>'
+      ).join('');
+    }
+    $('friendRankPanel').classList.remove('hide');
+  }
+
+  // cloud 模式：把开放数据域的 sharedCanvas 贴到面板里
+  function showFriendRankPanelWithCanvas(sharedCanvas) {
+    $('friendRankTitle').textContent = '好友排行榜';
+    const list = $('friendRankList');
+    list.innerHTML = '';
+    // sharedCanvas 是开放数据域画好的画布，直接显示
+    sharedCanvas.style.width = '100%';
+    sharedCanvas.style.height = 'auto';
+    sharedCanvas.style.borderRadius = '12px';
+    list.appendChild(sharedCanvas);
+    $('friendRankPanel').classList.remove('hide');
+  }
+
+  // ---------- 启动 ----------
+  resize();
+  renderRank($('rankMenu'));
+  $('best').textContent = G.best;
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
